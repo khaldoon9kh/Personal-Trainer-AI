@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shoulder-First — 4-Week Upper-Body Program</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>html,body{margin:0;padding:0}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+/* ---------- DESIGN TOKENS — "Bumper Plate" system ----------
+   concrete #ECEDEE bg · ink #22262B · chalk card #FBFAF7
+   Day colors = real bumper-plate colors: red / blue / green      */
+const T = {
+  bg: "#ECEDEE",
+  ink: "#22262B",
+  sub: "#6B7178",
+  card: "#FBFAF7",
+  line: "#D8DADC",
+  chalk: "#FFFFFF",
+};
+
+const KG2LB = 2.20462;
+const lb = (kg) => Math.round(kg * KG2LB);
+
+const DAYS = [
+  {
+    id: "A",
+    label: "DAY A",
+    name: "Press Day",
+    color: "#D22730",
+    focus: "Shoulders · Triceps · a little Chest",
+    schedule: "e.g. Monday",
+    exercises: [
+      {
+        name: "Seated Shoulder Press Machine",
+        desc: "Sit down, grab the handles at shoulder height, push them straight up over your head, lower slowly.",
+        machine: "Look for: “Shoulder Press” machine (seat + two handles above your shoulders)",
+        alt: "Alternative: seated dumbbell shoulder press",
+        sets: 3, reps: "8–10",
+        startKg: 20, incKg: 2.5, perHand: false,
+        yt: "seated shoulder press machine tutorial",
+        note: "Your main size-builder. Don't shrug your shoulders toward your ears.",
+      },
+      {
+        name: "Dumbbell Lateral Raise",
+        desc: "Stand holding a dumbbell in each hand, lift your arms out to your sides until they reach shoulder height, lower slowly.",
+        machine: "Look for: the dumbbell rack (also: “Lateral Raise” machine works)",
+        alt: "Alternative: single-arm cable lateral raise",
+        sets: 3, reps: "12–15",
+        startKg: 4, incKg: 0.5, perHand: true,
+        yt: "dumbbell lateral raise proper form",
+        note: "Builds shoulder WIDTH. Go light — if you swing, it's too heavy.",
+      },
+      {
+        name: "Cable Face Pull",
+        desc: "Set a rope at face height on the cable machine, pull it toward your forehead while your elbows flare out wide.",
+        machine: "Look for: adjustable cable column + rope attachment",
+        alt: "Alternative: bent-over dumbbell rear-delt raise",
+        sets: 3, reps: "12–15",
+        startKg: 15, incKg: 2.5, perHand: false,
+        yt: "cable face pull rope tutorial",
+        note: "Rear delts + shoulder health. Non-negotiable for your right shoulder.",
+      },
+      {
+        name: "Chest Press Machine",
+        desc: "Sit down, grab the handles at chest height, push them straight forward, return slowly.",
+        machine: "Look for: “Chest Press” machine",
+        alt: "Alternative: flat dumbbell bench press",
+        sets: 2, reps: "10",
+        startKg: 25, incKg: 2.5, perHand: false,
+        yt: "chest press machine tutorial",
+        note: "Balance work so the front of your body keeps up.",
+      },
+      {
+        name: "Incline Dumbbell Press",
+        desc: "Lie back on a bench set to ~30°, dumbbells at your chest, press them up and slightly back until arms are straight.",
+        machine: "Look for: adjustable bench (set one notch up) + dumbbell rack",
+        alt: "Alternative: incline chest press machine",
+        sets: 2, reps: "10",
+        startKg: 10, incKg: 1, perHand: true,
+        yt: "incline dumbbell press form beginner",
+        note: "Upper chest — fills out the area right under your collarbone.",
+      },
+      {
+        name: "Triceps Rope Pushdown",
+        desc: "Stand at the cable machine, rope at the top, push the rope down until your arms are straight, keep elbows glued to your sides.",
+        machine: "Look for: cable column (top position) + rope attachment",
+        alt: "Alternative: one-dumbbell overhead triceps extension",
+        sets: 3, reps: "10–12",
+        startKg: 15, incKg: 2.5, perHand: false,
+        yt: "triceps rope pushdown form",
+        note: "Triceps are 2/3 of your arm size.",
+      },
+      {
+        name: "Overhead Dumbbell Triceps Extension",
+        desc: "Hold ONE dumbbell with both hands above your head, bend your elbows to lower it behind your head, press back up.",
+        machine: "Look for: dumbbell rack + a bench with a short back rest",
+        alt: "Alternative: cable overhead triceps extension",
+        sets: 2, reps: "12",
+        startKg: 8, incKg: 1, perHand: false,
+        yt: "overhead dumbbell tricep extension two hands",
+        note: "Stretches the long head of the triceps — great for growth.",
+      },
+      {
+        name: "Floor Crunch",
+        desc: "Lie on your back, knees bent, feet flat, hands by your temples — curl your shoulders off the floor, lower slowly.",
+        machine: "Look for: a mat in the stretching area",
+        alt: "Alternative: ab crunch machine",
+        sets: 2, reps: "15",
+        startKg: 0, incKg: 0, perHand: false,
+        yt: "floor crunch proper form",
+        note: "Finisher. Add reps weekly (15 → 20), don't rush them.",
+      },
+    ],
+  },
+  {
+    id: "B",
+    label: "DAY B",
+    name: "Pull Day",
+    color: "#1F5FBF",
+    focus: "Back · Biceps · Forearms · Legs",
+    schedule: "e.g. Wednesday",
+    exercises: [
+      {
+        name: "Lat Pulldown Machine",
+        desc: "Sit down, grab the wide bar overhead, pull it down to your upper chest, let it rise slowly.",
+        machine: "Look for: “Lat Pulldown” (seat with knee pads + bar hanging above)",
+        alt: "Alternative: assisted pull-up machine",
+        sets: 3, reps: "8–10",
+        startKg: 30, incKg: 2.5, perHand: false,
+        yt: "lat pulldown machine tutorial",
+        note: "Pull with your elbows, not your hands.",
+      },
+      {
+        name: "Seated Cable Row",
+        desc: "Sit at the low cable, grab the handle, pull it to your belly button while sitting tall, return slowly.",
+        machine: "Look for: “Seated Row” (low bench facing a cable with foot plates)",
+        alt: "Alternative: one-arm dumbbell row on a bench",
+        sets: 3, reps: "10",
+        startKg: 30, incKg: 2.5, perHand: false,
+        yt: "seated cable row form",
+        note: "A strong back keeps your shoulders healthy and posture upright.",
+      },
+      {
+        name: "Reverse Pec-Deck (Rear Delts)",
+        desc: "Sit facing INTO the pec-deck machine, grab the handles in front of you, sweep your arms back like opening double doors.",
+        machine: "Look for: “Pec Deck / Rear Delt” machine (sit facing the pad)",
+        alt: "Alternative: bent-over dumbbell rear-delt raise",
+        sets: 3, reps: "12–15",
+        startKg: 15, incKg: 2.5, perHand: false,
+        yt: "reverse pec deck rear delt tutorial",
+        note: "More shoulder volume — rear delts make shoulders look 3D.",
+      },
+      {
+        name: "Dumbbell Shrug",
+        desc: "Stand holding a dumbbell in each hand at your sides, lift your shoulders straight up toward your ears, lower slowly. Arms stay straight.",
+        machine: "Look for: dumbbell rack",
+        alt: "Alternative: barbell shrug",
+        sets: 2, reps: "12",
+        startKg: 14, incKg: 2, perHand: true,
+        yt: "dumbbell shrug proper form",
+        note: "Traps — the upper-body muscle that shows even in a t-shirt.",
+      },
+      {
+        name: "Dumbbell Biceps Curl",
+        desc: "Stand with a dumbbell in each hand, palms forward, curl them to your shoulders without swinging, lower slowly.",
+        machine: "Look for: dumbbell rack (or “Biceps Curl” machine)",
+        alt: "Alternative: EZ-bar curl",
+        sets: 3, reps: "10–12",
+        startKg: 8, incKg: 1, perHand: true,
+        yt: "standing dumbbell bicep curl form",
+        note: "Do both arms together; the weaker right arm sets the pace.",
+      },
+      {
+        name: "Hammer Curl",
+        desc: "Same as a curl, but hold the dumbbells like hammers (palms facing each other) the whole time.",
+        machine: "Look for: dumbbell rack",
+        alt: "Alternative: rope hammer curl on the cable",
+        sets: 2, reps: "12",
+        startKg: 6, incKg: 1, perHand: true,
+        yt: "dumbbell hammer curl form",
+        note: "Hits the forearms and the muscle that thickens your arm.",
+      },
+      {
+        name: "Leg Press Machine",
+        desc: "Sit in the machine, feet shoulder-width on the platform, bend your knees to ~90°, push back up.",
+        machine: "Look for: “Leg Press” (big seat with a large foot platform)",
+        alt: "Alternative: goblet squat with one dumbbell",
+        sets: 2, reps: "12",
+        startKg: 60, incKg: 5, perHand: false,
+        yt: "leg press machine tutorial",
+        note: "Your requested lower-body balance work.",
+      },
+      {
+        name: "Farmer Carry",
+        desc: "Pick up a heavy dumbbell in each hand and walk tall for 30 seconds. That's it.",
+        machine: "Look for: dumbbell rack + open floor space",
+        alt: "Alternative: timed dead hang from the pull-up bar",
+        sets: 2, reps: "30 sec walk",
+        startKg: 16, incKg: 2, perHand: true,
+        yt: "farmer carry dumbbell form",
+        note: "Forearms, grip and core in one move.",
+      },
+      {
+        name: "Cable Crunch",
+        desc: "Kneel facing the cable machine holding the rope beside your head, curl your chest down toward your knees using your abs, return slowly.",
+        machine: "Look for: cable column (top position) + rope attachment",
+        alt: "Alternative: floor crunch",
+        sets: 2, reps: "12",
+        startKg: 20, incKg: 2.5, perHand: false,
+        yt: "kneeling cable crunch form",
+        note: "Abs with weight = abs that grow like any other muscle.",
+      },
+    ],
+  },
+  {
+    id: "C",
+    label: "DAY C",
+    name: "Shoulder + Arms Day",
+    color: "#1E8A4C",
+    focus: "Shoulders · Biceps · Triceps · Core/Legs",
+    schedule: "e.g. Friday",
+    exercises: [
+      {
+        name: "Seated Dumbbell Shoulder Press",
+        desc: "Sit on a bench with a tall back rest, dumbbells at shoulder height, press them up until your arms are straight, lower slowly.",
+        machine: "Look for: dumbbell rack + adjustable bench set upright",
+        alt: "Alternative: shoulder press machine",
+        sets: 3, reps: "10",
+        startKg: 8, incKg: 1, perHand: true,
+        yt: "seated dumbbell shoulder press form",
+        note: "THE key move for your left-right imbalance — each arm works alone.",
+      },
+      {
+        name: "Single-Arm Cable Lateral Raise",
+        desc: "Stand side-on to a low cable, grab the handle with your far hand, lift your arm out to the side to shoulder height.",
+        machine: "Look for: cable column, handle set at the lowest position",
+        alt: "Alternative: single-arm dumbbell lateral raise",
+        sets: 3, reps: "12–15 / side",
+        startKg: 5, incKg: 0.5, perHand: false,
+        yt: "single arm cable lateral raise",
+        note: "START WITH THE RIGHT ARM, then match the left to it exactly.",
+      },
+      {
+        name: "Cable Face Pull",
+        desc: "Rope at face height, pull it toward your forehead, elbows wide.",
+        machine: "Look for: cable column + rope attachment",
+        alt: "Alternative: reverse pec-deck",
+        sets: 2, reps: "15",
+        startKg: 15, incKg: 2.5, perHand: false,
+        yt: "cable face pull rope tutorial",
+        note: "Second weekly dose of shoulder armour.",
+      },
+      {
+        name: "Incline Dumbbell Curl",
+        desc: "Lie back on a bench set to ~45°, let your arms hang straight down, curl the dumbbells up without moving your upper arms.",
+        machine: "Look for: adjustable bench + dumbbell rack",
+        alt: "Alternative: preacher curl machine",
+        sets: 3, reps: "10",
+        startKg: 6, incKg: 1, perHand: true,
+        yt: "incline dumbbell curl form",
+        note: "Deep biceps stretch = strong growth signal.",
+      },
+      {
+        name: "Assisted Dip Machine",
+        desc: "Kneel on the pad, grab the bars, lower yourself until elbows hit ~90°, push back up. The pad pushes you up to help.",
+        machine: "Look for: “Assisted Dip / Pull-up” machine (kneeling pad between tall handles)",
+        alt: "Alternative: close-grip cable pushdown",
+        sets: 3, reps: "8–10",
+        startKg: 40, incKg: -2.5, perHand: false,
+        yt: "assisted dip machine tutorial",
+        note: "Weight shown = ASSIST. Each week you LOWER it — less help = stronger you. Stop shallow if the right shoulder complains.",
+      },
+      {
+        name: "Chest Fly Machine",
+        desc: "Sit with your back on the pad, arms out wide on the handles, sweep them together in front of your chest like closing double doors, open slowly.",
+        machine: "Look for: “Pec Deck / Chest Fly” machine (sit with your back on the pad this time)",
+        alt: "Alternative: flat dumbbell fly on a bench",
+        sets: 2, reps: "12",
+        startKg: 20, incKg: 2.5, perHand: false,
+        yt: "pec deck chest fly machine tutorial",
+        note: "Chest finisher — smooth and controlled, no slamming the handles together.",
+      },
+      {
+        name: "Goblet Squat",
+        desc: "Hold one dumbbell against your chest like a cup, squat down until thighs are parallel, stand back up.",
+        machine: "Look for: dumbbell rack + open floor",
+        alt: "Alternative: leg press machine",
+        sets: 2, reps: "10",
+        startKg: 12, incKg: 2, perHand: false,
+        yt: "goblet squat dumbbell form",
+        note: "Lower-body balance, part 2.",
+      },
+      {
+        name: "Plank",
+        desc: "Forearms on the floor, body in one straight line, hold and breathe.",
+        machine: "Look for: a mat in the stretching area",
+        alt: "Alternative: dead bug (lying on back, opposite arm+leg lowers)",
+        sets: 2, reps: "30 sec",
+        startKg: 0, incKg: 0, perHand: false,
+        yt: "plank proper form beginner",
+        note: "Core. Add 5–10 sec each week instead of weight.",
+      },
+      {
+        name: "Bicycle Crunch",
+        desc: "Lie on your back, hands by your temples, pedal your legs while bringing opposite elbow toward opposite knee, alternating sides.",
+        machine: "Look for: a mat in the stretching area",
+        alt: "Alternative: floor crunch",
+        sets: 2, reps: "15 / side",
+        startKg: 0, incKg: 0, perHand: false,
+        yt: "bicycle crunch proper form slow",
+        note: "Slow and controlled beats fast and sloppy. Add reps weekly.",
+      },
+    ],
+  },
+];
+
+const WARMUP = [
+  { text: "4 min easy bike or incline walk" },
+  { text: "Arm circles — 10 forward, 10 back", icon: "armcircle", desc: "Stand tall, arms straight out to the sides, draw big slow circles — 10 forward, then 10 backward." },
+  { text: "Band pull-aparts — 15 reps", icon: "pullapart", desc: "Hold a light resistance band in front of you at chest height with straight arms, pull your hands apart until the band touches your chest, return slowly." },
+  { text: "Cable external rotation (right-shoulder prep) — 2 × 12 very light", icon: "extrot", desc: "Stand side-on to a low cable, elbow glued to your ribs and bent 90°, rotate your forearm outward away from the machine. Very light weight — this wakes the shoulder up, it's not a lift." },
+];
+const COOLDOWN = [
+  { text: "Cross-body shoulder stretch — 30 sec/side", icon: "crossbody", desc: "Pull one straight arm across your chest with the other hand and hold. You should feel it in the back of the shoulder.", hold: true },
+  { text: "Doorway chest stretch — 30 sec", icon: "doorway", desc: "Forearm vertical against a door frame or rack post, elbow at shoulder height, step forward gently until your chest stretches.", hold: true },
+  { text: "Overhead triceps stretch — 30 sec/side", icon: "tristretch", desc: "Reach one arm up, drop the hand behind your neck, gently push that elbow down and back with your other hand.", hold: true },
+];
+
+const WEEK_NOTES = [
+  "Week 1 · Learn the movements. Stay at the starting weights even if they feel easy.",
+  "Week 2 · Same weights, push to the top of every rep range with clean form.",
+  "Week 3 · Weights go up (shown below). Last 2 reps should feel hard, form stays clean.",
+  "Week 4 · Weights up again. If form breaks, repeat last week's weight — that's fine.",
+];
+
+/* weight suggestion: weeks 1–2 = start, weeks 3–4 add increment */
+const weekKg = (ex, week) => {
+  const steps = Math.max(0, week - 2);
+  const v = ex.startKg + ex.incKg * steps;
+  return Math.round(v * 2) / 2;
+};
+
+/* ---------- tiny bumper-plate checkbox ---------- */
+function Plate({ done, color, onClick, label }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        width: 34, height: 34, borderRadius: "50%",
+        border: `3px solid ${done ? color : T.line}`,
+        background: done ? color : T.chalk,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", transition: "all .15s ease", padding: 0,
+      }}
+    >
+      <span style={{
+        width: 10, height: 10, borderRadius: "50%",
+        background: done ? T.chalk : T.line,
+      }} />
+    </button>
+  );
+}
+
+/* ---------- animated movement diagrams ---------- */
+const iconFor = (n) => {
+  if (n.includes("Chest Fly")) return "fly";
+  if (n.includes("Shrug")) return "shrug";
+  if (n.includes("Crunch")) return "crunch";
+  if (n.includes("Incline Dumbbell Press")) return "chestpress";
+  if (n.includes("Lat Pulldown")) return "pulldown";
+  if (n.includes("Chest Press")) return "chestpress";
+  if (n.includes("Leg Press")) return "legpress";
+  if (n.includes("Shoulder Press")) return "press";
+  if (n.includes("Lateral Raise")) return "lateral";
+  if (n.includes("Face Pull")) return "facepull";
+  if (n.includes("Pushdown")) return "pushdown";
+  if (n.includes("Overhead")) return "overhead";
+  if (n.includes("Row")) return "row";
+  if (n.includes("Pec-Deck")) return "reversefly";
+  if (n.includes("Curl")) return "curl";
+  if (n.includes("Carry")) return "carry";
+  if (n.includes("Dip")) return "dip";
+  if (n.includes("Squat")) return "squat";
+  if (n.includes("Plank")) return "plank";
+  return "press";
+};
+
+function MoveIcon({ type, color }) {
+  const P = { fill: "none", stroke: T.ink, strokeWidth: 3, strokeLinecap: "round", strokeLinejoin: "round" };
+  const M = { ...P, stroke: color };
+  const D = (cx, cy) => <circle cx={cx} cy={cy} r={3.5} fill={color} stroke="none" />;
+  const wrap = (stat, a, b) => (
+    <svg className="mv" viewBox="0 0 120 100" width="132" height="110" role="img" aria-label="movement diagram: faded pose is the start, solid pose is the finish">
+      {stat}
+      {a && <g className="pA">{a}</g>}
+      {b && <g className="pB">{b}</g>}
+    </svg>
+  );
+
+  switch (type) {
+    case "press":
+      return wrap(
+        <><circle cx="60" cy="26" r="7" {...P} /><path d="M60 34 V66 M46 66 H74 M54 66 L50 84 M66 66 L70 84" {...P} /></>,
+        <><path d="M60 40 L47 52 L45 40 M60 40 L73 52 L75 40" {...M} />{D(45, 38)}{D(75, 38)}</>,
+        <><path d="M60 40 L51 25 L49 11 M60 40 L69 25 L71 11" {...M} />{D(49, 9)}{D(71, 9)}</>
+      );
+    case "lateral":
+      return wrap(
+        <><circle cx="60" cy="22" r="7" {...P} /><path d="M60 29 V62 M60 62 L52 86 M60 62 L68 86" {...P} /></>,
+        <><path d="M60 36 L52 58 M60 36 L68 58" {...M} />{D(52, 60)}{D(68, 60)}</>,
+        <><path d="M60 36 L32 38 M60 36 L88 38" {...M} />{D(30, 38)}{D(90, 38)}</>
+      );
+    case "facepull":
+      return wrap(
+        <><rect x="104" y="28" width="6" height="22" fill={T.ink} /><circle cx="46" cy="30" r="7" {...P} /><path d="M46 37 V68 M46 68 L38 90 M46 68 L56 90" {...P} /></>,
+        <><path d="M46 44 L66 46 L86 42" {...M} />{D(86, 42)}<path d="M86 42 L104 38" {...P} strokeWidth={2} /></>,
+        <><path d="M46 44 L62 54 L54 38" {...M} />{D(54, 38)}<path d="M54 38 C 78 30, 92 34, 104 38" {...P} strokeWidth={2} /></>
+      );
+    case "chestpress":
+      return wrap(
+        <><path d="M38 30 V72 M44 34 V70 M38 70 H58 M44 70 L60 86" {...P} /><circle cx="45" cy="26" r="7" {...P} /></>,
+        <><path d="M44 44 L54 56 L60 44" {...M} />{D(61, 43)}</>,
+        <><path d="M44 44 L66 44 L88 44" {...M} />{D(89, 43)}</>
+      );
+    case "pushdown":
+      return wrap(
+        <><rect x="94" y="6" width="10" height="8" fill={T.ink} /><circle cx="48" cy="24" r="7" {...P} /><path d="M48 31 V66 M48 66 L40 88 M48 66 L56 88" {...P} /></>,
+        <><path d="M48 40 L56 52 L64 40" {...M} />{D(64, 40)}<path d="M64 40 L98 14" {...P} strokeWidth={2} /></>,
+        <><path d="M48 40 L56 52 L62 74" {...M} />{D(62, 74)}<path d="M62 74 L98 14" {...P} strokeWidth={2} /></>
+      );
+    case "overhead":
+      return wrap(
+        <><circle cx="52" cy="30" r="7" {...P} /><path d="M52 37 V70 M52 70 L44 90 M52 70 L60 90" {...P} /></>,
+        <><path d="M52 42 L58 22 L42 16" {...M} />{D(40, 16)}</>,
+        <><path d="M52 42 L58 22 L62 4" {...M} />{D(63, 3)}</>
+      );
+    case "pulldown":
+      return wrap(
+        <><circle cx="60" cy="34" r="7" {...P} /><path d="M60 41 V70 M48 70 H72 M52 70 L48 86 M68 70 L72 86" {...P} /></>,
+        <><path d="M28 12 H92" {...M} /><path d="M60 45 L42 14 M60 45 L78 14" {...M} /></>,
+        <><path d="M34 52 H86" {...M} /><path d="M60 45 L48 58 L40 53 M60 45 L72 58 L80 53" {...M} /></>
+      );
+    case "row":
+      return wrap(
+        <><circle cx="42" cy="28" r="7" {...P} /><path d="M42 35 V66 M42 66 L68 70 M74 58 V78" {...P} /><rect x="100" y="56" width="6" height="16" fill={T.ink} /></>,
+        <><path d="M42 44 L64 52 L86 56" {...M} />{D(86, 56)}<path d="M86 56 L100 62" {...P} strokeWidth={2} /></>,
+        <><path d="M42 44 L60 60 L48 56" {...M} />{D(48, 56)}<path d="M48 56 L100 62" {...P} strokeWidth={2} /></>
+      );
+    case "reversefly":
+      return wrap(
+        <><circle cx="60" cy="24" r="7" {...P} /><path d="M60 31 V64 M60 64 L52 86 M60 64 L68 86" {...P} /></>,
+        <><path d="M60 38 L52 52 M60 38 L68 52" {...M} />{D(52, 54)}{D(68, 54)}</>,
+        <><path d="M60 38 L30 36 M60 38 L90 36" {...M} />{D(28, 36)}{D(92, 36)}</>
+      );
+    case "curl":
+      return wrap(
+        <><circle cx="48" cy="26" r="7" {...P} /><path d="M48 33 V68 M48 68 L42 88 M48 68 L56 88" {...P} /></>,
+        <><path d="M48 42 L52 70" {...M} />{D(53, 72)}</>,
+        <><path d="M48 42 L52 58 L58 44" {...M} />{D(59, 42)}</>
+      );
+    case "legpress":
+      return wrap(
+        <><path d="M20 80 H60 M78 22 L96 54" {...P} /><circle cx="26" cy="68" r="7" {...P} /><path d="M32 66 L46 54" {...P} /></>,
+        <path d="M46 54 L60 48 L78 34" {...M} />,
+        <path d="M46 54 L66 42 L86 26" {...M} />
+      );
+    case "carry":
+      return wrap(
+        <><circle cx="50" cy="22" r="7" {...P} /><path d="M50 29 V60 M50 36 L47 66 M50 36 L55 66" {...P} />{D(47, 70)}{D(55, 70)}<path d="M76 50 H94 M89 45 L95 50 L89 55" {...M} strokeWidth={2} /></>,
+        <path d="M50 60 L42 84 M50 60 L58 84" {...M} />,
+        <path d="M50 60 L40 82 M50 60 L62 82" {...M} />
+      );
+    case "dip":
+      return wrap(
+        <path d="M36 30 V90 M84 30 V90 M30 44 H46 M74 44 H90" {...P} />,
+        <><circle cx="60" cy="42" r="7" {...P} /><path d="M60 49 V72 M60 72 L52 84" {...P} /><path d="M60 52 L46 44 M60 52 L74 44" {...M} /></>,
+        <><circle cx="60" cy="28" r="7" {...P} /><path d="M60 35 V60 M60 60 L52 76" {...P} /><path d="M60 40 L44 44 M60 40 L76 44" {...M} /></>
+      );
+    case "squat":
+      return wrap(
+        null,
+        <><circle cx="52" cy="22" r="7" {...P} /><path d="M52 29 V58 M52 58 V72 M52 72 V84 M52 84 H62" {...P} /><path d="M52 36 L60 40" {...M} />{D(62, 41)}</>,
+        <><circle cx="44" cy="40" r="7" {...P} /><path d="M46 47 L58 66 M58 66 L46 76 L50 86 M50 86 H62" {...P} /><path d="M48 52 L58 56" {...M} />{D(60, 57)}</>
+      );
+    case "fly":
+      return wrap(
+        <><circle cx="60" cy="24" r="7" {...P} /><path d="M60 31 V64 M60 64 L52 86 M60 64 L68 86" {...P} /></>,
+        <><path d="M60 38 L30 36 M60 38 L90 36" {...M} />{D(28, 36)}{D(92, 36)}</>,
+        <><path d="M60 38 L52 54 M60 38 L68 54" {...M} />{D(54, 56)}{D(66, 56)}</>
+      );
+    case "shrug":
+      return wrap(
+        <><circle cx="60" cy="20" r="7" {...P} /><path d="M60 27 V62 M60 62 L52 86 M60 62 L68 86" {...P} /></>,
+        <><path d="M52 34 H68 M60 34 L54 64 M60 34 L66 64" {...M} />{D(54, 68)}{D(66, 68)}</>,
+        <><path d="M52 30 H68 M60 30 L54 59 M60 30 L66 59" {...M} />{D(54, 63)}{D(66, 63)}<path d="M84 54 V40 M80 45 L84 39 L88 45" {...M} strokeWidth={2} /></>
+      );
+    case "crunch":
+      return wrap(
+        <><path d="M14 84 H106" {...P} strokeWidth={2} /><path d="M64 80 L76 62 L90 80" {...P} /></>,
+        <><circle cx="26" cy="74" r="6" {...P} /><path d="M32 77 L64 80" {...M} /></>,
+        <><circle cx="36" cy="60" r="6" {...P} /><path d="M40 65 Q52 70 64 80" {...M} /></>
+      );
+    case "armcircle":
+      return wrap(
+        <><circle cx="60" cy="20" r="7" {...P} /><path d="M60 27 V60 M60 60 L52 84 M60 60 L68 84" {...P} /><path d="M96 40 A11 11 0 1 1 98 26 M94 22 L99 27 L92 30" {...M} strokeWidth={2} /></>,
+        <path d="M60 34 L34 34 M60 34 L86 34" {...M} />,
+        <path d="M60 34 L40 16 M60 34 L80 16" {...M} />
+      );
+    case "pullapart":
+      return wrap(
+        <><circle cx="60" cy="20" r="7" {...P} /><path d="M60 27 V60 M60 60 L52 84 M60 60 L68 84" {...P} /></>,
+        <><path d="M60 36 L50 48 M60 36 L70 48" {...M} /><path d="M50 48 H70" {...P} strokeWidth={2} />{D(50, 48)}{D(70, 48)}</>,
+        <><path d="M60 36 L30 40 M60 36 L90 40" {...M} /><path d="M30 40 L90 40" {...P} strokeWidth={2} />{D(30, 40)}{D(90, 40)}</>
+      );
+    case "extrot":
+      return wrap(
+        <><rect x="8" y="44" width="6" height="16" fill={T.ink} /><circle cx="52" cy="20" r="7" {...P} /><path d="M52 27 V60 M52 60 L44 84 M52 60 L60 84" {...P} /><path d="M52 36 L52 54" {...P} /></>,
+        <><path d="M52 54 L36 50" {...M} />{D(34, 50)}<path d="M34 50 L14 50" {...P} strokeWidth={2} /></>,
+        <><path d="M52 54 L70 48" {...M} />{D(72, 48)}<path d="M72 48 C 50 62, 30 58, 14 50" {...P} strokeWidth={2} /></>
+      );
+    case "crossbody":
+      return wrap(
+        <><circle cx="60" cy="20" r="7" {...P} /><path d="M60 27 V60 M60 60 L52 84 M60 60 L68 84" {...P} /><path d="M66 34 L38 44" {...M} /><circle cx="36" cy="44" r="3.5" fill={T.ink} stroke="none" /><path d="M52 36 L58 42" {...P} /></>,
+        null, null
+      );
+    case "doorway":
+      return wrap(
+        <><path d="M84 16 V90" {...P} /><circle cx="48" cy="26" r="7" {...P} /><path d="M50 33 L58 62 M58 62 L50 86 M58 62 L68 84" {...P} /><path d="M54 38 L76 34 L80 20" {...M} />{D(80, 18)}</>,
+        null, null
+      );
+    case "tristretch":
+      return wrap(
+        <><circle cx="60" cy="24" r="7" {...P} /><path d="M60 31 V64 M60 64 L52 86 M60 64 L68 86" {...P} /><path d="M66 36 L70 14 L52 12" {...M} />{D(50, 12)}<path d="M52 34 L68 16" {...P} /></>,
+        null, null
+      );
+    case "plank":
+      return wrap(
+        <><path d="M16 82 H104" {...P} strokeWidth={2} /><circle cx="28" cy="58" r="6" {...P} /><path d="M34 62 L90 76 M34 62 L30 76 M24 78 H40 M90 76 L96 82" {...P} /></>,
+        null, null
+      );
+    default:
+      return null;
+  }
+}
+
+function App() {
+  const [week, setWeek] = useState(1);
+  const [dayIdx, setDayIdx] = useState(0);
+  const [done, setDone] = useState({});           // key: `${week}-${day}-${ex}-${set}`
+  const [checks, setChecks] = useState({});       // warm-up / cool-down items
+  const [open, setOpen] = useState({});           // expanded exercise cards
+
+  const day = DAYS[dayIdx];
+  const c = day.color;
+
+  const toggleSet = (ei, si) => {
+    const k = `${week}-${day.id}-${ei}-${si}`;
+    setDone((d) => ({ ...d, [k]: !d[k] }));
+  };
+
+  const totalSets = day.exercises.reduce((a, e) => a + e.sets, 0);
+  const doneSets = day.exercises.reduce((a, e, ei) => {
+    let n = 0;
+    for (let s = 0; s < e.sets; s++) if (done[`${week}-${day.id}-${ei}-${s}`]) n++;
+    return a + n;
+  }, 0);
+
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg, color: T.ink, fontFamily: "'Inter', -apple-system, system-ui, sans-serif", paddingBottom: 24 }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+        button:focus-visible { outline: 3px solid ${T.ink}; outline-offset: 2px; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+        .mv .pA { animation: mvA 2.4s ease-in-out infinite; }
+        .mv .pB { animation: mvB 2.4s ease-in-out infinite; }
+        @keyframes mvA { 0%,38% {opacity:1} 50%,88% {opacity:.16} 100% {opacity:1} }
+        @keyframes mvB { 0%,38% {opacity:.16} 50%,88% {opacity:1} 100% {opacity:.16} }
+        @media (prefers-reduced-motion: reduce) { .mv .pA { animation: none; opacity: .25; } .mv .pB { animation: none; opacity: 1; } }
+      `}</style>
+
+      {/* header */}
+      <div style={{ padding: "20px 16px 12px", maxWidth: 560, margin: "0 auto" }}>
+        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 32, letterSpacing: 1, textTransform: "uppercase", lineHeight: 1 }}>
+          Shoulder-First
+        </div>
+        <div style={{ fontSize: 13, color: T.sub, marginTop: 4 }}>
+          4 weeks · 3 days/week · ~60 min · built around your right-shoulder comeback
+        </div>
+
+        {/* week selector */}
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          {[1, 2, 3, 4].map((w) => (
+            <button key={w} onClick={() => setWeek(w)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 8,
+                border: `2px solid ${week === w ? T.ink : T.line}`,
+                background: week === w ? T.ink : T.chalk,
+                color: week === w ? T.chalk : T.ink,
+                fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16,
+                cursor: "pointer",
+              }}>
+              WK {w}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: T.sub, marginTop: 8, lineHeight: 1.45 }}>{WEEK_NOTES[week - 1]}</div>
+
+        {/* day tabs */}
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          {DAYS.map((d, i) => (
+            <button key={d.id} onClick={() => setDayIdx(i)}
+              style={{
+                flex: 1, padding: "10px 4px", borderRadius: 10, cursor: "pointer",
+                border: `2px solid ${i === dayIdx ? d.color : T.line}`,
+                background: i === dayIdx ? d.color : T.chalk,
+                color: i === dayIdx ? T.chalk : T.ink,
+              }}>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17, lineHeight: 1 }}>{d.label}</div>
+              <div style={{ fontSize: 10.5, marginTop: 3, opacity: 0.9 }}>{d.name}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* day body */}
+      <div style={{ maxWidth: 560, margin: "0 auto", padding: "0 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "6px 2px 10px" }}>
+          <div style={{ fontSize: 13, color: T.sub }}>{day.focus} · {day.schedule}</div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: c }}>
+            {doneSets}/{totalSets} sets
+          </div>
+        </div>
+
+        {/* today's lineup — prep before you go */}
+        <div style={{ background: T.ink, color: T.chalk, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17, textTransform: "uppercase", letterSpacing: 0.6 }}>
+              Today's lineup
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>read this BEFORE you leave home</div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            {day.exercises.map((ex, ei) => {
+              const kg = weekKg(ex, week);
+              const spot = ex.machine.replace("Look for: ", "").split(" (")[0];
+              return (
+                <div key={ei} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "5px 0", borderBottom: ei < day.exercises.length - 1 ? "1px solid rgba(255,255,255,.12)" : "none" }}>
+                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: c, minWidth: 18 }}>{ei + 1}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>{ex.name}</div>
+                    <div style={{ fontSize: 11.5, opacity: 0.7 }}>{spot}</div>
+                  </div>
+                  <div style={{ fontSize: 12, whiteSpace: "nowrap", textAlign: "right" }}>
+                    {ex.sets}×{ex.reps}
+                    {ex.startKg > 0 && <div style={{ opacity: 0.8 }}>{kg} kg{ex.perHand ? "/hand" : ""}{ex.incKg < 0 ? " assist" : ""}</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.6, opacity: 0.85, borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 8 }}>
+            <b>Watch at home (~6 min), not at the gym</b> — YouTube each phrase, one video is enough:{" "}
+            {[...new Set(day.exercises.map((e) => e.yt))].map((y, i, arr) => (
+              <span key={y}>“{y}”{i < arr.length - 1 ? " · " : ""}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* warm-up */}
+        <Section title="Warm-up · 8 min" color={c}>
+          {WARMUP.map((w, i) => (
+            <div key={i}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <CheckLine text={w.text} color={c}
+                    done={!!checks[`${week}-${day.id}-wu-${i}`]}
+                    onClick={() => setChecks((ch) => ({ ...ch, [`${week}-${day.id}-wu-${i}`]: !ch[`${week}-${day.id}-wu-${i}`] }))} />
+                </div>
+                {w.icon && (
+                  <button onClick={() => setOpen((o) => ({ ...o, ["wu-" + i]: !o["wu-" + i] }))}
+                    style={{ border: `1.5px solid ${T.line}`, background: T.chalk, borderRadius: 8, padding: "3px 9px", fontSize: 11.5, cursor: "pointer", color: T.ink, fontWeight: 600, flexShrink: 0 }}>
+                    {open["wu-" + i] ? "Hide" : "How?"}
+                  </button>
+                )}
+              </div>
+              {w.icon && open["wu-" + i] && (
+                <div style={{ display: "flex", gap: 10, alignItems: "center", background: T.bg, borderRadius: 10, padding: "6px 10px", margin: "2px 0 8px 28px" }}>
+                  <MoveIcon type={w.icon} color={c} />
+                  <div style={{ fontSize: 12.5, lineHeight: 1.45 }}>
+                    {w.desc}
+                    <div style={{ fontSize: 11, color: T.sub, marginTop: 4 }}>{w.hold ? "hold this position" : "faded = start · solid = finish"}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          <div style={{ fontSize: 12, color: T.sub, marginTop: 6 }}>
+            Right shoulder rule: dull burn is fine, sharp pain = stop the set.
+          </div>
+        </Section>
+
+        {/* exercises */}
+        {day.exercises.map((ex, ei) => {
+          const kg = weekKg(ex, week);
+          const isAssist = ex.incKg < 0;
+          const key = `${day.id}-${ei}`;
+          const expanded = !!open[key];
+          return (
+            <div key={ei} style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                <div>
+                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 19, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1.1 }}>
+                    {ex.name}
+                  </div>
+                  <div style={{ fontSize: 13, color: T.sub, marginTop: 3 }}>
+                    {ex.sets} × {ex.reps}
+                    {ex.startKg > 0 && (
+                      <> · <b style={{ color: T.ink }}>{kg} kg / {lb(kg)} lb{ex.perHand ? " per hand" : ""}{isAssist ? " assist" : ""}</b></>
+                    )}
+                  </div>
+                </div>
+                <button onClick={() => setOpen((o) => ({ ...o, [key]: !expanded }))}
+                  style={{ alignSelf: "flex-start", border: `1.5px solid ${T.line}`, background: T.chalk, borderRadius: 8, padding: "4px 10px", fontSize: 12, cursor: "pointer", color: T.ink, fontWeight: 600 }}>
+                  {expanded ? "Hide" : "How?"}
+                </button>
+              </div>
+
+              {expanded && (
+                <div style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.5, borderTop: `1px dashed ${T.line}`, paddingTop: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
+                    <div style={{ textAlign: "center", background: T.bg, borderRadius: 10, padding: "6px 14px 2px" }}>
+                      <MoveIcon type={iconFor(ex.name)} color={c} />
+                      <div style={{ fontSize: 11, color: T.sub, paddingBottom: 4 }}>faded = start · solid = finish</div>
+                    </div>
+                  </div>
+                  <div>{ex.desc}</div>
+                  <div style={{ marginTop: 6, color: T.sub }}>{ex.machine}</div>
+                  <div style={{ color: T.sub }}>{ex.alt}</div>
+                  <div style={{ marginTop: 6 }}>
+                    <span style={{ background: T.bg, border: `1px solid ${T.line}`, borderRadius: 6, padding: "2px 8px", fontSize: 12 }}>
+                      ▶ YouTube: “{ex.yt}”
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 12.5, color: c, fontWeight: 600 }}>{ex.note}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: T.sub }}>
+                    Self-test: last 2 reps hard, form clean. Too easy → {isAssist ? "lower the assist" : "add weight"} next session; form breaks → go lighter.
+                  </div>
+                </div>
+              )}
+
+              {/* set plates */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                <div style={{ height: 5, flexShrink: 0, width: 18, background: T.line, borderRadius: 3 }} />
+                {Array.from({ length: ex.sets }).map((_, si) => (
+                  <Plate key={si} color={c}
+                    done={!!done[`${week}-${day.id}-${ei}-${si}`]}
+                    onClick={() => toggleSet(ei, si)}
+                    label={`${ex.name} set ${si + 1}`} />
+                ))}
+                <div style={{ height: 5, flex: 1, background: T.line, borderRadius: 3 }} />
+                <span style={{ fontSize: 11, color: T.sub, whiteSpace: "nowrap" }}>tap = set done</span>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* cool-down */}
+        <Section title="Cool-down · 4 min" color={c}>
+          {COOLDOWN.map((w, i) => (
+            <div key={i}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <CheckLine text={w.text} color={c}
+                    done={!!checks[`${week}-${day.id}-cd-${i}`]}
+                    onClick={() => setChecks((ch) => ({ ...ch, [`${week}-${day.id}-cd-${i}`]: !ch[`${week}-${day.id}-cd-${i}`] }))} />
+                </div>
+                {w.icon && (
+                  <button onClick={() => setOpen((o) => ({ ...o, ["cd-" + i]: !o["cd-" + i] }))}
+                    style={{ border: `1.5px solid ${T.line}`, background: T.chalk, borderRadius: 8, padding: "3px 9px", fontSize: 11.5, cursor: "pointer", color: T.ink, fontWeight: 600, flexShrink: 0 }}>
+                    {open["cd-" + i] ? "Hide" : "How?"}
+                  </button>
+                )}
+              </div>
+              {w.icon && open["cd-" + i] && (
+                <div style={{ display: "flex", gap: 10, alignItems: "center", background: T.bg, borderRadius: 10, padding: "6px 10px", margin: "2px 0 8px 28px" }}>
+                  <MoveIcon type={w.icon} color={c} />
+                  <div style={{ fontSize: 12.5, lineHeight: 1.45 }}>
+                    {w.desc}
+                    <div style={{ fontSize: 11, color: T.sub, marginTop: 4 }}>{w.hold ? "hold this position" : "faded = start · solid = finish"}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </Section>
+
+        {/* nutrition card */}
+        <Section title="Daily fuel · lean bulk (meds-adjusted)" color={c}>
+          <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
+            <b>~3,000 kcal · 180 g protein</b> (you: 100 kg) · 130 g food + 2 scoops (50 g).<br />
+            <b>8:30</b> meds + big glass of water<br />
+            <b>9:30–10</b> Shake #1: scoop + banana (or blend with milk + 40 g oats)<br />
+            <b>10:30–11:30</b> train<br />
+            <b>~12:00</b> Shake #2 within 60 min + real food if you can (rice + chicken)<br />
+            <b>15:30 alarm</b> no-effort snack — don't wait to feel hungry<br />
+            <b>Evening</b> appetite is back: BIG dinner — most calories live here<br />
+            <b>Bed</b> Greek yogurt or cottage cheese (~20 g)<br />
+            <b>Rest day:</b> same times, same protein — shakes with breakfast + afternoon.<br />
+            Can't-eat day rescue: 3rd scoop is fine.
+          </div>
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, color, children }) {
+  return (
+    <div style={{ background: T.card, border: `1px solid ${T.line}`, borderLeft: `4px solid ${color}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function CheckLine({ text, done, onClick, color }) {
+  return (
+    <button onClick={onClick}
+      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: "transparent", border: "none", padding: "5px 0", cursor: "pointer", textAlign: "left" }}>
+      <span style={{
+        width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+        border: `2px solid ${done ? color : T.line}`,
+        background: done ? color : T.chalk,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        color: T.chalk, fontSize: 12, fontWeight: 700,
+      }}>{done ? "✓" : ""}</span>
+      <span style={{ fontSize: 13.5, color: done ? T.sub : T.ink, textDecoration: done ? "line-through" : "none" }}>{text}</span>
+    </button>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
