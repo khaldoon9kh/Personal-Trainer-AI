@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Python helpers and generated files
+*.py
+__pycache__/
+*.py[cod]
+
+# Local notes and editor/OS files
+PROMPT.md
+.vscode/
+.idea/
+.DS_Store
+
+# Local environment files
+.env
+.env.*
+!.env.example
