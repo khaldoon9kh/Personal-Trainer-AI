@@ -5,13 +5,6 @@ export const T = {
   card: "#FBFAF7",
   line: "#D8DADC",
   chalk: "#FFFFFF",
-  // Universal primary-action color (Start Workout / Complete Set / Finish,
-  // current-set markers) — separate from `day.color`, which keeps
-  // color-coding each day (push/pull/legs) the way the app already did.
-  action: "#D22730",
-  actionDark: "#A81E24",
-  good: "#1E8A4C",
-  goodBg: "#E4F3EA",
 };
 
 export const KG2LB = 2.20462;
