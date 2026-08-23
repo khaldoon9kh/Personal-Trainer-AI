@@ -7,20 +7,21 @@ export default function CheckLine({ text, done, onClick, color }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 12,
         width: "100%",
         background: "transparent",
         border: "none",
-        padding: "5px 0",
+        padding: "10px 0",
+        minHeight: 44,
         cursor: "pointer",
         textAlign: "left",
       }}
     >
       <span
         style={{
-          width: 18,
-          height: 18,
-          borderRadius: 5,
+          width: 26,
+          height: 26,
+          borderRadius: 7,
           flexShrink: 0,
           border: `2px solid ${done ? color : T.line}`,
           background: done ? color : T.chalk,
@@ -28,7 +29,7 @@ export default function CheckLine({ text, done, onClick, color }) {
           alignItems: "center",
           justifyContent: "center",
           color: T.chalk,
-          fontSize: 12,
+          fontSize: 15,
           fontWeight: 700,
         }}
       >
@@ -36,7 +37,7 @@ export default function CheckLine({ text, done, onClick, color }) {
       </span>
       <span
         style={{
-          fontSize: 13.5,
+          fontSize: 15,
           color: done ? T.sub : T.ink,
           textDecoration: done ? "line-through" : "none",
         }}
