@@ -14,7 +14,7 @@ function BackArrow() {
  * and a progress readout, per the "hide the navigation during a workout"
  * requirement.
  */
-export default function WorkoutHeader({ mode, day, week, days, onSelectDay, onSelectWeek, onBack, progressLabel, progressFraction }) {
+export default function WorkoutHeader({ mode, day, week, days, onSelectDay, onSelectWeek, onBack, progressLabel, blockStatuses }) {
   if (mode !== "idle") {
     return (
       <div style={{ padding: "16px 16px 10px", maxWidth: 560, margin: "0 auto" }}>
@@ -67,17 +67,21 @@ export default function WorkoutHeader({ mode, day, week, days, onSelectDay, onSe
           )}
         </div>
 
-        {typeof progressFraction === "number" && (
-          <div style={{ height: 5, background: T.line, borderRadius: 3, marginTop: 12, overflow: "hidden" }}>
-            <div
-              style={{
-                height: "100%",
-                width: `${Math.round(progressFraction * 100)}%`,
-                background: T.action,
-                borderRadius: 3,
-                transition: "width .25s ease",
-              }}
-            />
+        {blockStatuses && blockStatuses.length > 0 && (
+          <div style={{ display: "flex", gap: 5, marginTop: 12 }}>
+            {blockStatuses.map((status, index) => (
+              <div
+                key={index}
+                style={{
+                  flex: 1,
+                  height: 5,
+                  borderRadius: 3,
+                  background: status === "upcoming" ? T.line : T.action,
+                  opacity: status === "current" ? 1 : status === "done" ? 0.9 : 1,
+                  boxShadow: status === "current" ? `0 0 0 2px ${T.action}33` : "none",
+                }}
+              />
+            ))}
           </div>
         )}
       </div>

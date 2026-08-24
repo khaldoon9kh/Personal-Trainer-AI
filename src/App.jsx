@@ -8,7 +8,7 @@ import ActiveWorkoutScreen from "./components/ActiveWorkoutScreen";
 import WorkoutCompleteSummary from "./components/WorkoutCompleteSummary";
 import RestTimer from "./components/RestTimer";
 import StickyBar, { PrimaryButton } from "./components/StickyBar";
-import { computeVolume, findFirstIncomplete, getNextDay } from "./utils/workout";
+import { buildBlocks, computeVolume, findBlockPosition, getNextDay } from "./utils/workout";
 
 const STORAGE_KEY = "personal-trainer-ai-workout-state-v1";
 const REST_SECONDS_DEFAULT = 90;
@@ -88,8 +88,8 @@ export default function App() {
   const day = useMemo(() => DAYS.find((entry) => entry.id === viewDayId) ?? DAYS[0], [viewDayId]);
 
   const totalSets = day.exercises.reduce((sum, ex) => sum + ex.sets, 0);
-  const doneSets = day.exercises.reduce((sum, ex, i) => sum + Array.from({ length: ex.sets }).filter((_, s) => done[`${viewWeek}-${day.id}-${i}-${s}`]).length, 0);
-  const pos = useMemo(() => findFirstIncomplete(day, done, viewWeek), [day, done, viewWeek]);
+  const blocks = useMemo(() => buildBlocks(day), [day]);
+  const pos = useMemo(() => findBlockPosition(day, done, viewWeek), [day, done, viewWeek]);
 
   const toggleOpen = (key) => setOpen((state) => ({ ...state, [key]: !state[key] }));
   const toggleCheck = (section, index) => {
@@ -124,7 +124,7 @@ export default function App() {
   const matchesSession = session && session.dayId === activeDayId && session.week === week;
   const browsedPos = useMemo(() => {
     const browsedDay = DAYS.find((entry) => entry.id === activeDayId) ?? DAYS[0];
-    return findFirstIncomplete(browsedDay, done, week);
+    return findBlockPosition(browsedDay, done, week);
   }, [activeDayId, week, done]);
 
   let ctaLabel = "Start Workout";
@@ -169,19 +169,18 @@ export default function App() {
 
   const handleWeightDelta = (delta) => {
     if (!pos) return;
-    const exercise = day.exercises[pos.exerciseIndex];
-    const key = `${viewWeek}-${day.id}-${pos.exerciseIndex}-${pos.setIndex}`;
-    const step = Math.abs(exercise.incKg) || 1;
+    const key = `${viewWeek}-${day.id}-${pos.flatIndex}-${pos.round}`;
+    const step = Math.abs(pos.exercise.incKg) || 1;
     setLogs((state) => {
       const current = state[key] ?? {};
-      const base = current.weight ?? exercise.startKg;
+      const base = current.weight ?? pos.exercise.startKg;
       return { ...state, [key]: { ...current, weight: Math.max(0, Math.round((base + delta * step) * 2) / 2) } };
     });
   };
 
   const handleRepsDelta = (delta) => {
     if (!pos) return;
-    const key = `${viewWeek}-${day.id}-${pos.exerciseIndex}-${pos.setIndex}`;
+    const key = `${viewWeek}-${day.id}-${pos.flatIndex}-${pos.round}`;
     setLogs((state) => {
       const current = state[key] ?? {};
       const base = current.reps ?? 0;
@@ -189,18 +188,26 @@ export default function App() {
     });
   };
 
+  // Completing a set/round advances to the next slot in the workout. Inside
+  // a superset, finishing one member (B1) jumps straight to the next member
+  // (B2) with no rest — only finishing the LAST member of a round (or a
+  // standalone exercise's set) starts the between-round rest timer.
   const handleCompleteSet = () => {
     if (!pos) return;
-    const key = `${viewWeek}-${day.id}-${pos.exerciseIndex}-${pos.setIndex}`;
+    const key = `${viewWeek}-${day.id}-${pos.flatIndex}-${pos.round}`;
     const updatedDone = { ...done, [key]: true };
     setDone(updatedDone);
 
-    const next = findFirstIncomplete(day, updatedDone, viewWeek);
-    if (next) {
-      startRest(REST_SECONDS_DEFAULT);
-    } else {
+    const isLastMemberOfRound = pos.memberIndex === pos.block.members.length - 1;
+    const next = findBlockPosition(day, updatedDone, viewWeek);
+
+    if (!next) {
       setRest({ remaining: 0, running: false, endAt: null });
       setSession((state) => ({ ...state, phase: "complete", finishedAt: Date.now() }));
+    } else if (!isLastMemberOfRound) {
+      setRest({ remaining: 0, running: false, endAt: null });
+    } else {
+      startRest(REST_SECONDS_DEFAULT);
     }
   };
 
@@ -210,6 +217,17 @@ export default function App() {
   const mode = !session || session.phase === "idle" ? "idle" : session.phase;
 
   const contentPaddingBottom = mode === "active" && rest.remaining > 0 ? 210 : 130;
+
+  const blockStatuses =
+    mode === "active" && pos
+      ? blocks.map((_, index) => (index === pos.blockIndex ? "current" : index < pos.blockIndex ? "done" : "upcoming"))
+      : undefined;
+
+  let completeLabel = "Complete Set";
+  if (mode === "active" && pos && pos.block.isSuperset) {
+    const isLastMemberOfRound = pos.memberIndex === pos.block.members.length - 1;
+    completeLabel = isLastMemberOfRound ? `Complete ${pos.exercise.series} & Finish Round` : `Complete ${pos.exercise.series}`;
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: T.bg, color: T.ink, fontFamily: "'Inter', -apple-system, system-ui, sans-serif" }}>
@@ -221,8 +239,8 @@ export default function App() {
         onSelectDay={setActiveDayId}
         onSelectWeek={setWeek}
         onBack={handleBack}
-        progressLabel={mode === "active" && pos ? `${pos.exerciseIndex + 1} / ${day.exercises.length}` : undefined}
-        progressFraction={mode === "active" ? (totalSets ? doneSets / totalSets : 0) : undefined}
+        progressLabel={mode === "active" && pos ? `${pos.blockIndex + 1} / ${blocks.length} blocks` : undefined}
+        blockStatuses={blockStatuses}
       />
 
       <div style={{ maxWidth: 560, margin: "0 auto", padding: `0 16px ${contentPaddingBottom}px` }}>
@@ -274,7 +292,7 @@ export default function App() {
         {mode === "active" && (
           <div>
             {rest.remaining > 0 && <RestTimer remaining={rest.remaining} running={rest.running} onAdjust={adjustRest} onToggleRun={toggleRestRun} />}
-            <PrimaryButton onClick={handleCompleteSet}>Complete Set</PrimaryButton>
+            <PrimaryButton onClick={handleCompleteSet}>{completeLabel}</PrimaryButton>
           </div>
         )}
         {mode === "complete" && <PrimaryButton onClick={handleFinish}>Finish</PrimaryButton>}

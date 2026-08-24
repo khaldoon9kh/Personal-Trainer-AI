@@ -74,6 +74,7 @@ function Stepper({ label, value, unit, onDecrement, onIncrement, accent }) {
 }
 
 export default function SetControls({
+  unitLabel = "SET",
   totalSets,
   currentSetIndex,
   setStates,
@@ -90,7 +91,7 @@ export default function SetControls({
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
         <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17, color: T.ink }}>
-          SET {currentSetIndex + 1} OF {totalSets}
+          {unitLabel} {currentSetIndex + 1} OF {totalSets}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {setStates.map((state, index) => (

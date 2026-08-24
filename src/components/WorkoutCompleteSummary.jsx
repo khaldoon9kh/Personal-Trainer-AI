@@ -1,7 +1,12 @@
 import { T, weekKg } from "../theme";
-import { countDoneSets, formatClock, parseSetReps } from "../utils/workout";
+import { buildBlocks, countDoneSets, formatClock, isBlockFullyDone, parseSetReps } from "../utils/workout";
 import CollapsibleSection from "./CollapsibleSection";
 import DailyFuelNotes from "./DailyFuelNotes";
+
+function repsLabelFor(exercise, doneCount) {
+  const lastReps = parseSetReps(exercise, Math.max(0, doneCount - 1));
+  return /^\d+$/.test(lastReps) ? `${lastReps} reps` : lastReps;
+}
 
 function Stat({ value, label }) {
   return (
@@ -26,6 +31,8 @@ export default function WorkoutCompleteSummary({
 }) {
   const totalSets = day.exercises.reduce((sum, ex) => sum + ex.sets, 0);
   const doneSets = day.exercises.reduce((sum, ex, i) => sum + countDoneSets(ex, done, week, day.id, i), 0);
+  const blocks = buildBlocks(day);
+  const doneBlocks = blocks.filter((block) => isBlockFullyDone(block, done, week, day.id)).length;
 
   return (
     <div>
@@ -44,8 +51,8 @@ export default function WorkoutCompleteSummary({
         <div style={{ fontSize: 13.5, opacity: 0.75, marginTop: 2 }}>You crushed {day.label.toLowerCase()} day today.</div>
         <div style={{ display: "flex", flexWrap: "wrap", marginTop: 12, borderTop: "1px solid rgba(255,255,255,.14)" }}>
           <Stat value={formatClock(elapsedSeconds)} label="Total time" />
+          <Stat value={`${doneBlocks}/${blocks.length}`} label="Blocks completed" />
           <Stat value={`${doneSets}/${totalSets}`} label="Sets completed" />
-          <Stat value={day.exercises.length} label="Exercises" />
           <Stat value={`${volumeKg.toLocaleString()} kg`} label="Total volume" />
         </div>
       </div>
@@ -54,46 +61,89 @@ export default function WorkoutCompleteSummary({
         <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 2px" }}>
           Exercise summary
         </div>
-        {day.exercises.map((exercise, index) => {
-          const doneCount = countDoneSets(exercise, done, week, day.id, index);
-          const complete = doneCount === exercise.sets;
-          const kg = weekKg(exercise, week);
-          const lastReps = parseSetReps(exercise, Math.max(0, doneCount - 1));
-          const repsLabel = /^\d+$/.test(lastReps) ? `${lastReps} reps` : lastReps;
-          return (
-            <div
-              key={exercise.name}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 0",
-                borderTop: index === 0 ? "none" : `1px solid ${T.line}`,
-              }}
-            >
+        {blocks.map((block, blockIndex) => {
+          if (!block.isSuperset) {
+            const { exercise, flatIndex } = block.members[0];
+            const doneCount = countDoneSets(exercise, done, week, day.id, flatIndex);
+            const complete = doneCount === exercise.sets;
+            const kg = weekKg(exercise, week);
+            return (
               <div
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "50%",
-                  flexShrink: 0,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  background: complete ? T.good : T.line,
-                  color: complete ? T.chalk : T.sub,
-                }}
+                key={block.key}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: blockIndex === 0 ? "none" : `1px solid ${T.line}` }}
               >
-                {complete ? "✓" : String(index + 1).padStart(2, "0")}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink }}>{exercise.name}</div>
-                <div style={{ fontSize: 12.5, color: T.sub, marginTop: 1 }}>
-                  {doneCount}/{exercise.sets} sets · {repsLabel}
-                  {exercise.startKg > 0 ? ` @ ${kg} kg` : ""}
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    background: complete ? T.good : T.line,
+                    color: complete ? T.chalk : T.sub,
+                  }}
+                >
+                  {complete ? "✓" : exercise.series}
                 </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink }}>{exercise.name}</div>
+                  <div style={{ fontSize: 12.5, color: T.sub, marginTop: 1 }}>
+                    {doneCount}/{exercise.sets} sets · {repsLabelFor(exercise, doneCount)}
+                    {exercise.startKg > 0 ? ` @ ${kg} kg` : ""}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          const complete = isBlockFullyDone(block, done, week, day.id);
+          const doneRounds = Array.from({ length: block.rounds }).filter((_, round) =>
+            block.members.every((member) => round < member.exercise.sets && countDoneSets(member.exercise, done, week, day.id, member.flatIndex) > round)
+          ).length;
+
+          return (
+            <div key={block.key} style={{ padding: "10px 0", borderTop: blockIndex === 0 ? "none" : `1px solid ${T.line}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    background: complete ? T.good : T.line,
+                    color: complete ? T.chalk : T.sub,
+                  }}
+                >
+                  {complete ? "✓" : block.label}
+                </div>
+                <div style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: T.ink }}>
+                  Superset ({block.members.map((m) => m.exercise.series).join(" + ")})
+                </div>
+                <div style={{ fontSize: 12.5, color: T.sub, flexShrink: 0 }}>{doneRounds}/{block.rounds} rounds</div>
+              </div>
+              <div style={{ paddingLeft: 36, marginTop: 4, display: "flex", flexDirection: "column", gap: 4 }}>
+                {block.members.map((member) => {
+                  const doneCount = countDoneSets(member.exercise, done, week, day.id, member.flatIndex);
+                  const kg = weekKg(member.exercise, week);
+                  return (
+                    <div key={member.flatIndex} style={{ fontSize: 13, color: T.ink }}>
+                      <b>{member.exercise.series}</b> {member.exercise.name}
+                      <div style={{ fontSize: 12, color: T.sub }}>
+                        {doneCount}/{member.exercise.sets} sets · {repsLabelFor(member.exercise, doneCount)}
+                        {member.exercise.startKg > 0 ? ` @ ${kg} kg` : ""}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { T } from "../theme";
 import ExerciseDetail from "./ExerciseDetail";
 
-export default function ExerciseListItem({ index, exercise, kg, color }) {
+export default function ExerciseListItem({ exercise, kg, color }) {
   const [open, setOpen] = useState(false);
   const isAdded = exercise.series === "+";
 
@@ -34,13 +34,14 @@ export default function ExerciseListItem({ index, exercise, kg, color }) {
             borderRadius: 7,
             minWidth: 28,
             height: 28,
+            padding: "0 6px",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          {String(index + 1).padStart(2, "0")}
+          {exercise.series}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>

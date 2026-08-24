@@ -21,7 +21,7 @@ export default function NextUpCard({ exercise, kg }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {exercise.name}
+          {exercise.series ? `${exercise.series} · ${exercise.name}` : exercise.name}
         </div>
       </div>
       <div style={{ fontSize: 12.5, color: T.sub, flexShrink: 0 }}>

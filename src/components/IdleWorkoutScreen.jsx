@@ -3,12 +3,15 @@ import { WARMUP, COOLDOWN } from "../workoutContent";
 import WorkoutOverviewCard from "./WorkoutOverviewCard";
 import ChecklistCard from "./ChecklistCard";
 import ExerciseListItem from "./ExerciseListItem";
+import SupersetLineupCard from "./SupersetLineupCard";
 import CollapsibleSection from "./CollapsibleSection";
 import DailyFuelNotes from "./DailyFuelNotes";
-import { extractDuration } from "../utils/workout";
+import { buildBlocks, extractDuration } from "../utils/workout";
 
 export default function IdleWorkoutScreen({ day, week, checks, onToggleCheck, open, onToggleOpen, weekNote, totalSets }) {
   const color = day.color;
+  const blocks = buildBlocks(day);
+  const kgFor = (exercise) => weekKg(exercise, week);
 
   return (
     <div>
@@ -31,9 +34,13 @@ export default function IdleWorkoutScreen({ day, week, checks, onToggleCheck, op
         </div>
       </div>
       <div style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 14, padding: "2px 14px", marginBottom: 12 }}>
-        {day.exercises.map((exercise, index) => (
-          <ExerciseListItem key={exercise.name} index={index} exercise={exercise} kg={weekKg(exercise, week)} color={color} />
-        ))}
+        {blocks.map((block) =>
+          block.isSuperset ? (
+            <SupersetLineupCard key={block.key} block={block} kgFor={kgFor} color={color} />
+          ) : (
+            <ExerciseListItem key={block.key} exercise={block.members[0].exercise} kg={kgFor(block.members[0].exercise)} color={color} />
+          )
+        )}
       </div>
 
       <CollapsibleSection title="AI Coach" color={color} preview={weekNote} open={!!open.coach} onToggle={() => onToggleOpen("coach")}>
