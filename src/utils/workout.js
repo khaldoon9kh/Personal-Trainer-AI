@@ -116,6 +116,49 @@ export function peekNextPosition(day, pos) {
   return resolvePosition(blocks, stepPosition(blocks, pos));
 }
 
+function stepPositionBack(blocks, pos) {
+  if (pos.memberIndex > 0) {
+    return { blockIndex: pos.blockIndex, round: pos.round, memberIndex: pos.memberIndex - 1 };
+  }
+  if (pos.round > 0) {
+    const block = blocks[pos.blockIndex];
+    return { blockIndex: pos.blockIndex, round: pos.round - 1, memberIndex: block.members.length - 1 };
+  }
+  if (pos.blockIndex > 0) {
+    const prevBlock = blocks[pos.blockIndex - 1];
+    return { blockIndex: pos.blockIndex - 1, round: prevBlock.rounds - 1, memberIndex: prevBlock.members.length - 1 };
+  }
+  return null;
+}
+
+// The slot immediately before `pos`. Since findBlockPosition always returns
+// the FIRST incomplete slot, everything structurally before it is
+// guaranteed to already be done — so this doubles as "what was just
+// completed" for an undo action, without needing a separate history stack.
+export function peekPrevPosition(day, pos) {
+  const blocks = buildBlocks(day);
+  return resolvePosition(blocks, stepPositionBack(blocks, pos));
+}
+
+// Walks backward from the very end of the workout to find the most
+// recently completed set/round. Used to support "undo" from the complete
+// screen, where every slot is done and there's no first-incomplete position
+// to step back from.
+export function findLastCompletedPosition(day, done, week) {
+  const blocks = buildBlocks(day);
+  const lastBlock = blocks[blocks.length - 1];
+  let pos = { blockIndex: blocks.length - 1, round: lastBlock.rounds - 1, memberIndex: lastBlock.members.length - 1 };
+  while (pos) {
+    const block = blocks[pos.blockIndex];
+    const member = block.members[pos.memberIndex];
+    if (pos.round < member.exercise.sets && isSetDone(done, week, day.id, member.flatIndex, pos.round)) {
+      return resolvePosition(blocks, pos);
+    }
+    pos = stepPositionBack(blocks, pos);
+  }
+  return null;
+}
+
 export function isBlockFullyDone(block, done, week, dayId) {
   return block.members.every((member) =>
     Array.from({ length: member.exercise.sets }).every((_, round) => isSetDone(done, week, dayId, member.flatIndex, round))

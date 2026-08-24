@@ -7,8 +7,9 @@ import IdleWorkoutScreen from "./components/IdleWorkoutScreen";
 import ActiveWorkoutScreen from "./components/ActiveWorkoutScreen";
 import WorkoutCompleteSummary from "./components/WorkoutCompleteSummary";
 import RestTimer from "./components/RestTimer";
-import StickyBar, { PrimaryButton } from "./components/StickyBar";
-import { buildBlocks, computeVolume, findBlockPosition, getNextDay } from "./utils/workout";
+import StickyBar, { GhostButton, PrimaryButton } from "./components/StickyBar";
+import { buildBlocks, computeVolume, findBlockPosition, findLastCompletedPosition, getNextDay, peekPrevPosition } from "./utils/workout";
+import { playRestEndAlarm, primeAudio } from "./utils/sound";
 
 const STORAGE_KEY = "personal-trainer-ai-workout-state-v1";
 const REST_SECONDS_DEFAULT = 90;
@@ -68,16 +69,21 @@ export default function App() {
   }, [hydrated, week, activeDayId, done, checks, logs, session, rest]);
 
   // Rest timer ticks off `endAt` (a timestamp) rather than counting down in
-  // memory, so it stays correct across refreshes and background tabs.
+  // memory, so it stays correct across refreshes and background tabs. The
+  // alarm fires exactly once, when this specific countdown reaches zero —
+  // not on every render, and not when the user cancels it via undo.
   useEffect(() => {
     if (!rest.running || !rest.endAt) return undefined;
+    const endAt = rest.endAt;
     const interval = window.setInterval(() => {
-      setRest((state) => {
-        if (!state.running || !state.endAt) return state;
-        const left = Math.max(0, Math.round((state.endAt - Date.now()) / 1000));
-        if (left <= 0) return { remaining: 0, running: false, endAt: null };
-        return { ...state, remaining: left };
-      });
+      const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      if (left <= 0) {
+        window.clearInterval(interval);
+        setRest({ remaining: 0, running: false, endAt: null });
+        playRestEndAlarm();
+      } else {
+        setRest((state) => (state.endAt === endAt ? { ...state, remaining: left } : state));
+      }
     }, 500);
     return () => window.clearInterval(interval);
   }, [rest.running, rest.endAt]);
@@ -97,7 +103,10 @@ export default function App() {
     setChecks((state) => ({ ...state, [key]: !state[key] }));
   };
 
-  const startRest = (seconds) => setRest({ remaining: seconds, running: true, endAt: Date.now() + seconds * 1000 });
+  const startRest = (seconds) => {
+    primeAudio();
+    setRest({ remaining: seconds, running: true, endAt: Date.now() + seconds * 1000 });
+  };
   const adjustRest = (delta) => {
     setRest((state) => {
       if (state.running && state.endAt) {
@@ -211,12 +220,36 @@ export default function App() {
     }
   };
 
+  const mode = !session || session.phase === "idle" ? "idle" : session.phase;
+
+  // Lets a mis-tap on "Complete Set" be undone instead of forcing a refresh
+  // or a localStorage wipe. Works from mid-workout (steps back to whatever
+  // was just marked done) and from the complete screen (reopens the last
+  // block so the workout goes back to active).
+  const undoTarget =
+    mode === "complete" ? findLastCompletedPosition(day, done, viewWeek) : mode === "active" && pos ? peekPrevPosition(day, pos) : null;
+
+  const handleUndoLast = () => {
+    if (!undoTarget) return;
+    const key = `${viewWeek}-${day.id}-${undoTarget.flatIndex}-${undoTarget.round}`;
+    setDone((state) => {
+      const next = { ...state };
+      delete next[key];
+      return next;
+    });
+    setRest({ remaining: 0, running: false, endAt: null });
+    if (mode === "complete") {
+      setSession((state) => ({ ...state, phase: "active", finishedAt: null }));
+    }
+  };
+
+  const undoLabel = undoTarget?.block.isSuperset ? `Undo last set (${undoTarget.exercise.series})` : "Undo last set";
+
   const weekNote = WEEK_NOTES[viewWeek - 1];
   const volumeKg = useMemo(() => computeVolume(day, viewWeek, done, logs), [day, viewWeek, done, logs]);
   const elapsedSeconds = session?.startedAt ? Math.max(0, Math.round(((session.finishedAt ?? Date.now()) - session.startedAt) / 1000)) : 0;
-  const mode = !session || session.phase === "idle" ? "idle" : session.phase;
 
-  const contentPaddingBottom = mode === "active" && rest.remaining > 0 ? 210 : 130;
+  const contentPaddingBottom = 130 + (mode === "active" && rest.remaining > 0 ? 80 : 0) + (undoTarget ? 48 : 0);
 
   const blockStatuses =
     mode === "active" && pos
@@ -291,11 +324,17 @@ export default function App() {
         {mode === "idle" && <PrimaryButton onClick={handlePrimaryCta}>{ctaLabel}</PrimaryButton>}
         {mode === "active" && (
           <div>
+            {undoTarget && <GhostButton onClick={handleUndoLast}>↺ {undoLabel}</GhostButton>}
             {rest.remaining > 0 && <RestTimer remaining={rest.remaining} running={rest.running} onAdjust={adjustRest} onToggleRun={toggleRestRun} />}
             <PrimaryButton onClick={handleCompleteSet}>{completeLabel}</PrimaryButton>
           </div>
         )}
-        {mode === "complete" && <PrimaryButton onClick={handleFinish}>Finish</PrimaryButton>}
+        {mode === "complete" && (
+          <div>
+            {undoTarget && <GhostButton onClick={handleUndoLast}>↺ {undoLabel}</GhostButton>}
+            <PrimaryButton onClick={handleFinish}>Finish</PrimaryButton>
+          </div>
+        )}
       </StickyBar>
     </div>
   );

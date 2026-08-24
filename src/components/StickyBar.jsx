@@ -24,6 +24,32 @@ export default function StickyBar({ children }) {
   );
 }
 
+export function GhostButton({ children, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        border: `1.5px solid ${T.line}`,
+        borderRadius: 12,
+        background: T.chalk,
+        color: T.sub,
+        fontFamily: "'Barlow Condensed', sans-serif",
+        fontWeight: 700,
+        fontSize: 13.5,
+        letterSpacing: 0.3,
+        textTransform: "uppercase",
+        padding: "10px 0",
+        minHeight: 40,
+        marginBottom: 8,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function PrimaryButton({ children, onClick, color = T.action, disabled }) {
   return (
     <button
